@@ -1,5 +1,7 @@
 # 一个基于biliup-rs已经封装好可以满足基本需求的自用库
 
+[BiliupApi - crates.io: Rust Package Registry](https://crates.io/crates/BiliupApi)
+
 默认是在当前目录下使用biliup-rs格式的cookie.json
 
 然后函数就三个
