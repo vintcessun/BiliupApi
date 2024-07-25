@@ -1,3 +1,4 @@
+#[warn(non_snake_case)]
 use anyhow::{Context, Result};
 use biliup::client::{Client, LoginInfo};
 use biliup::video::{BiliBili, Video, Vid};
