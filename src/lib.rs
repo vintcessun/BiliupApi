@@ -1,4 +1,3 @@
-#[allow(non_snake_case)]
 use anyhow::{Context, Result};
 use biliup::client::{Client, LoginInfo};
 use biliup::video::{BiliBili, Video, Vid};
@@ -69,11 +68,8 @@ pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String
     };
 
     let uploaded_videos = loop{
-        match upload(&[PathBuf::from(&filename)], &client, 10).await{
-            Ok(ret)=>{
-                break ret;
-            },
-            Err(_)=>{}
+        if let Ok(ret) = upload(&[PathBuf::from(&filename)], &client, 10).await{
+            break ret;
         }
     };
     let mut builder = biliup::video::Studio::builder()
@@ -106,14 +102,11 @@ pub async fn _append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error
     let client = Client::new();
     let login_info = client.login_by_cookies(fopen_rw(cookie_file)?).await?;
     let mut uploaded_videos = loop{
-        match upload(&[PathBuf::from(&filename)], &client, 10).await{
-            Ok(ret)=>{
-                break ret;
-            },
-            Err(_)=>{}
+        if let Ok(ret) = upload(&[PathBuf::from(&filename)], &client, 10).await{
+            break ret;
         }
     };
-    let mut studio = BiliBili::new(&login_info, &client).studio_data(Vid::Bvid(bv.clone())).await?;
+    let mut studio = BiliBili::new(&login_info, &client).studio_data(Vid::Bvid(bv.to_owned())).await?;
     studio.videos.append(&mut uploaded_videos);
     let _ret = studio.edit(&login_info).await?;
     //println!("{}",_ret);
@@ -125,7 +118,7 @@ pub async fn _show_video(bv:&String)->Result<Value,Box<dyn Error>>{
 
     let client = Client::new();
     let login_info = client.login_by_cookies(fopen_rw(cookie_file)?).await?;
-    let video_info = BiliBili::new(&login_info, &client).video_data(Vid::Bvid(bv.clone())).await?;
+    let video_info = BiliBili::new(&login_info, &client).video_data(Vid::Bvid(bv.to_owned())).await?;
     Ok(video_info)
 }
 
