@@ -6,21 +6,21 @@
 
 然后函数就三个
 
-pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String,Box<dyn Error>>
+pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String>
 
-pub fn append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error>>
+pub fn append_video(filename:&String,bv:&String)->Result<()>
 
-pub fn show_video(bv:&String)->Result<Value,Box<dyn Error>>
+pub fn show_video(bv:&String)->Result<Value>
 
 都做了同步封装
 
 如果要异步的是如下：
 
-pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String,Box<dyn Error>>
+pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String>
 
-pub async fn _append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error>>
+pub async fn _append_video(filename:&String,bv:&String)->Result<()>
 
-pub async fn _show_video(bv:&String)->Result<Value,Box<dyn Error>>
+pub async fn _show_video(bv:&String)->Result<Value>
 
 使用简单，下面是VideoInfo的实现，手动弄一下就好了
 

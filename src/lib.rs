@@ -13,6 +13,7 @@ use std::task::Poll;
 use reqwest::Body;
 use serde_json::Value;
 use std::io::Seek;
+use anyhow::Result;
 
 pub struct VideoInfo{
     title:String,//标题
@@ -23,7 +24,7 @@ pub struct VideoInfo{
     desc:String,//简介
 }
 
-pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String,Box<dyn Error>>{
+pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String>{
     tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()
@@ -33,7 +34,7 @@ pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String,Box<dy
     })
 }
 
-pub fn append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error>>{
+pub fn append_video(filename:&String,bv:&String)->Result<()>{
     tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()
@@ -43,7 +44,7 @@ pub fn append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error>>{
     })
 }
 
-pub fn show_video(bv:&String)->Result<Value,Box<dyn Error>>{
+pub fn show_video(bv:&String)->Result<Value>{
     tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()
@@ -53,7 +54,7 @@ pub fn show_video(bv:&String)->Result<Value,Box<dyn Error>>{
     })
 }
 
-pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String,Box<dyn Error>>{
+pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String>{
     let cookie_file=PathBuf::from("cookies.json");
 
     let client = Client::new();
@@ -96,7 +97,7 @@ pub async fn _upload_video(video_info:VideoInfo,filename:&String)->Result<String
     Ok(bv)
 }
 
-pub async fn _append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error>>{
+pub async fn _append_video(filename:&String,bv:&String)->Result<()>{
     let cookie_file=PathBuf::from("cookies.json");
 
     let client = Client::new();
@@ -113,7 +114,7 @@ pub async fn _append_video(filename:&String,bv:&String)->Result<(),Box<dyn Error
     Ok(())
 }
 
-pub async fn _show_video(bv:&String)->Result<Value,Box<dyn Error>>{
+pub async fn _show_video(bv:&String)->Result<Value>{
     let cookie_file=PathBuf::from("cookies.json");
 
     let client = Client::new();
