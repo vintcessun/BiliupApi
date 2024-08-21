@@ -4,7 +4,6 @@ use biliup::video::{BiliBili, Video, Vid};
 use biliup::{line, VideoFile};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-use std::error::Error;
 use indicatif::{ProgressBar, ProgressStyle};
 use futures::{Stream, StreamExt};
 use bytes::{Buf, Bytes};
@@ -13,7 +12,6 @@ use std::task::Poll;
 use reqwest::Body;
 use serde_json::Value;
 use std::io::Seek;
-use anyhow::Result;
 
 pub struct VideoInfo{
     title:String,//标题
