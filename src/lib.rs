@@ -14,12 +14,12 @@ use serde_json::Value;
 use std::io::Seek;
 
 pub struct VideoInfo{
-    title:String,//标题
-    copyright:u8,//1自制 2转载
-    source:String,//来源
-    tag:String,//用逗号分割
-    tid:u16,//分区号
-    desc:String,//简介
+    pub title:String,//标题
+    pub copyright:u8,//1自制 2转载
+    pub source:String,//来源
+    pub tag:String,//用逗号分割
+    pub tid:u16,//分区号
+    pub desc:String,//简介
 }
 
 pub fn upload_video(video_info:VideoInfo,filename:&String)->Result<String>{
