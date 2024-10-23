@@ -5,13 +5,23 @@ use biliup::{line, VideoFile};
 use bytes::{Buf, Bytes};
 use futures::{Stream, StreamExt};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use lazy_static::lazy_static;
 use reqwest::Body;
 use serde_json::Value;
 use std::io::Seek;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::Arc;
 use std::task::Poll;
 use std::time::Instant;
+
+lazy_static! {
+    static ref COOKIEFILE: Arc<std::fs::File> = Arc::new(loop {
+        if let Ok(f) = fopen_rw("cookies.json") {
+            break f;
+        }
+    });
+}
 
 pub struct VideoInfo {
     pub title: String,  //标题
@@ -46,6 +56,14 @@ pub fn show_video(bv: &String) -> Result<Value> {
         .block_on(async { _show_video(bv).await })
 }
 
+fn get_file() -> std::fs::File {
+    loop {
+        if let Ok(f) = Arc::try_unwrap(COOKIEFILE.clone()) {
+            break f;
+        }
+    }
+}
+
 pub async fn _upload_video(
     video_info: VideoInfo,
     filename: &String,
@@ -54,7 +72,7 @@ pub async fn _upload_video(
     let cookie_file = PathBuf::from("cookies.json");
 
     let client = Client::new();
-    let f = fopen_rw(&cookie_file)?;
+    let f = get_file();
     let login_info = match client.login_by_cookies(f).await {
         Ok(ret) => ret,
         Err(_) => {
@@ -98,10 +116,8 @@ pub async fn _append_video(
     bv: &String,
     multi: Option<MultiProgress>,
 ) -> Result<()> {
-    let cookie_file = PathBuf::from("cookies.json");
-
     let client = Client::new();
-    let login_info = client.login_by_cookies(fopen_rw(cookie_file)?).await?;
+    let login_info = client.login_by_cookies(get_file()).await?;
     let mut uploaded_videos = loop {
         if let Ok(ret) = upload(&[PathBuf::from(&filename)], &client, 10, multi.clone()).await {
             break ret;
@@ -117,10 +133,8 @@ pub async fn _append_video(
 }
 
 pub async fn _show_video(bv: &String) -> Result<Value> {
-    let cookie_file = PathBuf::from("cookies.json");
-
     let client = Client::new();
-    let login_info = client.login_by_cookies(fopen_rw(cookie_file)?).await?;
+    let login_info = client.login_by_cookies(get_file()).await?;
     let video_info = BiliBili::new(&login_info, &client)
         .video_data(Vid::Bvid(bv.to_owned()))
         .await?;
@@ -174,8 +188,13 @@ async fn upload(
             Some(ref m) => m.add(pb),
             None => pb,
         };
+        let name = match video_path.file_name() {
+            Some(s) => s.to_str().unwrap_or(""),
+            None => "",
+        };
+        let name = name.split("斗阵来看戏").collect::<Vec<_>>()[0];
         pb.set_style(ProgressStyle::default_bar()
-            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")?);
+            .template(format!("{{spinner:.green}} 上传{} [{{elapsed_precise}}] [{{wide_bar:.cyan/blue}}] {{bytes}}/{{total_bytes}} ({{bytes_per_sec}}, {{eta}})",name).as_str())?);
         // pb.enable_steady_tick(Duration::from_secs(1));
         // pb.tick()
 

@@ -4,13 +4,14 @@ version = 3
 
 [[package]]
 name = "BiliupApi"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "biliup",
  "bytes",
  "futures",
  "indicatif",
+ "lazy_static",
  "reqwest",
  "serde_json",
  "tokio",
