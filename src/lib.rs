@@ -8,7 +8,8 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lazy_static::lazy_static;
 use reqwest::Body;
 use serde_json::Value;
-use std::io::Seek;
+//use std::io::Seek;
+use async_static::async_static;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -16,9 +17,19 @@ use std::task::Poll;
 use std::time::Instant;
 
 lazy_static! {
-    static ref COOKIEFILE: Arc<std::fs::File> = Arc::new(loop {
-        if let Ok(f) = fopen_rw("cookies.json") {
-            break f;
+    static ref CLIENT: Arc<Client> = Arc::new(Client::new());
+}
+async_static! {
+    static ref LOGININFO: Arc<LoginInfo> = Arc::new(loop {
+        if let Ok(l) = CLIENT
+            .login_by_cookies(loop {
+                if let Ok(f) = fopen_rw("cookies.json") {
+                    break f;
+                }
+            })
+            .await
+        {
+            break l;
         }
     });
 }
@@ -56,34 +67,16 @@ pub fn show_video(bv: &String) -> Result<Value> {
         .block_on(async { _show_video(bv).await })
 }
 
-fn get_file() -> std::fs::File {
-    loop {
-        if let Ok(f) = Arc::try_unwrap(COOKIEFILE.clone()) {
-            break f;
-        }
-    }
-}
-
 pub async fn _upload_video(
     video_info: VideoInfo,
     filename: &String,
     multi: Option<MultiProgress>,
 ) -> Result<String> {
-    let cookie_file = PathBuf::from("cookies.json");
-
-    let client = Client::new();
-    let f = get_file();
-    let login_info = match client.login_by_cookies(f).await {
-        Ok(ret) => ret,
-        Err(_) => {
-            renew(Client::new(), cookie_file.clone()).await?;
-            let f = fopen_rw(&cookie_file)?;
-            client.login_by_cookies(f).await?
-        }
-    };
+    let client = CLIENT.as_ref();
+    let login_info = LOGININFO.await.as_ref();
 
     let uploaded_videos = loop {
-        if let Ok(ret) = upload(&[PathBuf::from(&filename)], &client, 10, multi.clone()).await {
+        if let Ok(ret) = upload(&[PathBuf::from(&filename)], client, 10, multi.clone()).await {
             break ret;
         }
     };
@@ -98,7 +91,7 @@ pub async fn _upload_video(
         .build();
     //println!("{:?}",uploaded_videos);
     let bv = loop {
-        let ret = &builder.submit(&login_info).await;
+        let ret = &builder.submit(login_info).await;
         match ret {
             Ok(result) => {
                 let bv = result["data"]["bvid"].to_string();
@@ -116,31 +109,32 @@ pub async fn _append_video(
     bv: &String,
     multi: Option<MultiProgress>,
 ) -> Result<()> {
-    let client = Client::new();
-    let login_info = client.login_by_cookies(get_file()).await?;
+    let client = CLIENT.as_ref();
+    let login_info = LOGININFO.await.as_ref();
     let mut uploaded_videos = loop {
-        if let Ok(ret) = upload(&[PathBuf::from(&filename)], &client, 10, multi.clone()).await {
+        if let Ok(ret) = upload(&[PathBuf::from(&filename)], client, 10, multi.clone()).await {
             break ret;
         }
     };
-    let mut studio = BiliBili::new(&login_info, &client)
+    let mut studio = BiliBili::new(login_info, client)
         .studio_data(Vid::Bvid(bv.to_owned()))
         .await?;
     studio.videos.append(&mut uploaded_videos);
-    let _ret = studio.edit(&login_info).await?;
+    let _ret = studio.edit(login_info).await?;
     //println!("{}",_ret);
     Ok(())
 }
 
 pub async fn _show_video(bv: &String) -> Result<Value> {
-    let client = Client::new();
-    let login_info = client.login_by_cookies(get_file()).await?;
-    let video_info = BiliBili::new(&login_info, &client)
+    let client = CLIENT.as_ref();
+    let login_info = LOGININFO.await.as_ref();
+    let video_info = BiliBili::new(login_info, client)
         .video_data(Vid::Bvid(bv.to_owned()))
         .await?;
     Ok(video_info)
 }
 
+/*
 async fn renew(client: Client, user_cookie: PathBuf) -> Result<()> {
     let mut file = fopen_rw(user_cookie)?;
     let login_info: LoginInfo = serde_json::from_reader(&file)?;
@@ -150,7 +144,7 @@ async fn renew(client: Client, user_cookie: PathBuf) -> Result<()> {
     serde_json::to_writer_pretty(std::io::BufWriter::new(&file), &new_info)?;
     println!("{new_info:?}");
     Ok(())
-}
+}*/
 
 async fn upload(
     video_path: &[PathBuf],
