@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use biliup::client::{Client, LoginInfo};
 use biliup::video::{BiliBili, Vid, Video};
 use biliup::{line, VideoFile};
@@ -10,6 +10,7 @@ use reqwest::Body;
 use serde_json::Value;
 //use std::io::Seek;
 use async_static::async_static;
+use log::error;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
@@ -126,11 +127,18 @@ pub async fn _append_video(
 }
 
 pub async fn _show_video(bv: &String) -> Result<Value> {
-    let client = CLIENT.as_ref();
+    let client = Client::new();
     let login_info = LOGININFO.await.as_ref();
-    let video_info = BiliBili::new(login_info, client)
+    let video_info = match BiliBili::new(login_info, &client)
         .video_data(Vid::Bvid(bv.to_owned()))
-        .await?;
+        .await
+    {
+        Ok(v) => v,
+        Err(e) => {
+            error!("{}", e);
+            return Err(anyhow!("Errors {}", e));
+        }
+    };
     Ok(video_info)
 }
 
